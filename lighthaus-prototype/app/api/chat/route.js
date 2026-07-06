@@ -53,7 +53,20 @@ export async function POST(req) {
     }
 
     const data = await res.json();
-    const reply = data?.content?.[0]?.text ?? "...";
+
+    const textBlocks = (data?.content || [])
+      .filter((b) => b && b.type === "text" && typeof b.text === "string")
+      .map((b) => b.text);
+
+    let reply;
+    if (textBlocks.length > 0) {
+      reply = textBlocks.join("\n\n");
+    } else {
+      console.error("Unexpected Anthropic response shape:", JSON.stringify(data));
+      reply = `(debug — unexpected response shape, stop_reason: ${data?.stop_reason ?? "unknown"}) ${JSON.stringify(
+        data
+      ).slice(0, 600)}`;
+    }
 
     return Response.json({ reply });
   } catch (err) {
